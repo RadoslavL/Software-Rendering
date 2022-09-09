@@ -4,6 +4,8 @@
 #include<assert.h>
 
 void fillbottomtriangle(Display *dpy, Window w, GC gc, float v1[2], float v2[2], float v3[2]){
+   printf("v1: %f, %f; v2: %f, %f; v3: %f, %f\n", v1[0], v1[1], v2[0], v2[1], v3[0], v3[1]);
+   fflush(stdout);
    float top[2];
    float left[2];
    float right[2];
@@ -56,6 +58,8 @@ void fillbottomtriangle(Display *dpy, Window w, GC gc, float v1[2], float v2[2],
          right[1] = v1[1];
       }
    }
+   printf("top: %f, %f; left: %f, %f; right: %f, %f\n", top[0], top[1], left[0], left[1], right[0], right[1]);
+   fflush(stdout);
    currentxleft = top[0];
    currentxright = top[0];
    slopeleft  = (left[0]  - top[0]) / (left[1]  - top[1]);
@@ -69,6 +73,8 @@ void fillbottomtriangle(Display *dpy, Window w, GC gc, float v1[2], float v2[2],
 }
 
 void filltoptriangle(Display *dpy, Window w, GC gc, float v1[2], float v2[2], float v3[2]){
+   printf("v1: %f, %f; v2: %f, %f; v3: %f, %f\n", v1[0], v1[1], v2[0], v2[1], v3[0], v3[1]);
+   fflush(stdout);
    float bottom[2];
    float left[2];
    float right[2];
@@ -124,8 +130,8 @@ void filltoptriangle(Display *dpy, Window w, GC gc, float v1[2], float v2[2], fl
          right[1] = v1[1];
       }
    }
-   //printf("left: %f, %f; right: %f, %f; bottom: %f, %f\n", left[0], left[1], right[0], right[1], bottom[0], bottom[1]);
-   //fflush(stdout);
+   printf("bottom: %f, %f; left: %f, %f; right: %f, %f\n", bottom[0], bottom[1], left[0], left[1], right[0], right[1]);
+   fflush(stdout);
    currentxleft = bottom[0];
    currentxright = bottom[0];
    slopeleft  = (bottom[0] - left[0])  / (bottom[1] - left[1]);
@@ -133,8 +139,8 @@ void filltoptriangle(Display *dpy, Window w, GC gc, float v1[2], float v2[2], fl
    int i;
    for(i = bottom[1]; i > left[1]; i--){
       XDrawLine(dpy, w, gc, (int)currentxleft, i, (int)currentxright, i);
-      currentxleft += slopeleft;
-      currentxright += sloperight;
+      currentxleft -= slopeleft;
+      currentxright -= sloperight;
    }
 }
 
@@ -278,6 +284,8 @@ int main(){
    float v3[2] = {50, 100};
    //filltoptriangle(dpy, w, gc, v1, v2, v3);
    drawtriangle(dpy, w, gc, v1, v2, v3);
+   //fillbottomtriangle(dpy, w, gc, max, mid2, mid);
+   //filltoptriangle(dpy, w, gc, mid, mid2, min);
    //XDrawLine(dpy, w, gc, 10, 60, 180, 20);
    XFlush(dpy);
    while(1){
