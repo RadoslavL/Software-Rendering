@@ -12,6 +12,12 @@ const unsigned int width = 1054;
 const unsigned int height = 1057;
 
 void vertexshader(float position[3], float model[16], float view[16], float proj[16], float out[2]){
+   /*
+   mat4 int1;
+   mat4 int2;
+   vec4 int3;
+   vec4 int4;
+   */
    float int1[16];
    float int2[16];
    float int3[4];
@@ -21,7 +27,7 @@ void vertexshader(float position[3], float model[16], float view[16], float proj
    /*
    glm_mat4_mul(view, model, int1);
    glm_mat4_mul(proj, int1, int2);
-   glm_mat4_mulv(int2, (vec4){position[1], position[2], position[3], 1.0f}, int3);
+   glm_mat4_mulv(int2, (vec4){position[1], position[2], position[3], 1.0f}, int4);
    */
    int3[0] = position[0];
    int3[1] = position[1];
@@ -119,7 +125,7 @@ void fillbottomtriangle(float v1[2], float v2[2], float v3[2], int *framebuffer)
    float outcolor[4];
    int i, j;
    for(i = top[1]; i <= left[1]; i++){
-      for(j = currentxleft; j <= currentxright; j++){
+      for(j = currentxleft; j < currentxright; j++){
          fragmentshader(incolor, outcolor);
 	 framebuffer[i * width + j] = (255 << 24 | ((int)outcolor[0] * 255 & 0xFF) << 16 | ((int)outcolor[1] * 255 & 0xFF) << 8 | (int)outcolor[2] * 255 & 0xFF);
       }
@@ -193,7 +199,7 @@ void filltoptriangle(float v1[2], float v2[2], float v3[2], int *framebuffer){
    float outcolor[4];
    int i, j;
    for(i = bottom[1]; i > left[1]; i--){
-      for(j = currentxleft; j <= currentxright; j++){
+      for(j = currentxleft; j < currentxright; j++){
          fragmentshader(incolor, outcolor);
 	 framebuffer[i * width + j] = (255 << 24 | ((int)outcolor[0] * 255 & 0xFF) << 16 | ((int)outcolor[1] * 255 & 0xFF) << 8 | (int)outcolor[2] * 255 & 0xFF);
       }
@@ -329,6 +335,25 @@ void drawtriangle(float pos1[3], float pos2[3], float pos3[3], float model[16], 
    }
 }
 
+void drawtrianglearray(float *positions, int size, float model[16], float view[16], float proj[16], int *framebuffer){
+   float pos1[3];
+   float pos2[3];
+   float pos3[3];
+   int i;
+   for(i = 0; i < size / 9; i++){
+      pos1[0] = positions[i * 9];
+      pos1[1] = positions[i * 9 + 1];
+      pos1[2] = positions[i * 9 + 2];
+      pos2[0] = positions[i * 9 + 3];
+      pos2[1] = positions[i * 9 + 4];
+      pos2[2] = positions[i * 9 + 5];
+      pos3[0] = positions[i * 9 + 6];
+      pos3[1] = positions[i * 9 + 7];
+      pos3[2] = positions[i * 9 + 8];
+      drawtriangle(pos1, pos2, pos3, model, view, proj, framebuffer);
+   }
+}
+
 int main(){
    Display *dpy = XOpenDisplay(NULL);
    assert(dpy);
@@ -364,6 +389,13 @@ int main(){
                      0, 0, 0, 1,
                      0, 0, 1, 0};
    /*
+   mat4 model = GLM_MAT4_IDENTITY_INIT;
+   mat4 view = GLM_MAT4_IDENTITY_INIT;
+   mat4 proj = GLM_MAT4_IDENTITY_INIT;
+   glm_lookat((vec3){0, 0, 5}, (vec3){0, 0, 0}, (vec3){0, 1, 0}, view);
+   glm_perspective(glm_rad(45.0f), (float)width/(float)height, 0.1f, 100.0f, proj);
+   */
+   /*
    float v1[3] = {-0.5f, -0.5f,  0.0f};
    float v2[3] = {-0.5f,  0.5f,  0.0f};
    float v3[3] = { 0.5f,  0.5f,  0.0f};
@@ -372,6 +404,49 @@ int main(){
    float v1[3] = {-0.5f, -0.5f,  0.0f};
    float v2[3] = { 0.0f,  0.5f,  0.0f};
    float v3[3] = { 0.5f, -0.5f,  0.0f};
+   float vertices[] = {
+      -0.5f, -0.5f,  0.5f,
+      -0.5f,  0.5f,  0.5f,
+       0.5f,  0.5f,  0.5f,
+       0.5f,  0.5f,  0.5f,
+       0.5f, -0.5f,  0.5f,
+      -0.5f, -0.5f,  0.5f,
+
+       0.5f, -0.5f, -0.5f,
+       0.5f,  0.5f, -0.5f,
+      -0.5f,  0.5f, -0.5f,
+      -0.5f,  0.5f, -0.5f,
+      -0.5f, -0.5f, -0.5f,
+       0.5f, -0.5f, -0.5f,
+
+       0.5f, -0.5f,  0.5f,
+       0.5f,  0.5f,  0.5f,
+       0.5f,  0.5f, -0.5f,
+       0.5f,  0.5f, -0.5f,
+       0.5f, -0.5f, -0.5f,
+       0.5f, -0.5f,  0.5f,
+
+      -0.5f, -0.5f, -0.5f,
+      -0.5f,  0.5f, -0.5f,
+      -0.5f,  0.5f,  0.5f,
+      -0.5f,  0.5f,  0.5f,
+      -0.5f, -0.5f,  0.5f,
+      -0.5f, -0.5f, -0.5f,
+
+      -0.5f,  0.5f,  0.5f,
+      -0.5f,  0.5f, -0.5f,
+       0.5f,  0.5f, -0.5f,
+       0.5f,  0.5f, -0.5f,
+       0.5f,  0.5f,  0.5f,
+      -0.5f,  0.5f,  0.5f,
+
+       0.5f, -0.5f,  0.5f,
+       0.5f, -0.5f, -0.5f,
+      -0.5f, -0.5f, -0.5f,
+      -0.5f, -0.5f, -0.5f,
+      -0.5f, -0.5f,  0.5f,
+       0.5f, -0.5f,  0.5f
+   };
    int *framebuffer = malloc(width * height * sizeof(int));
    //drawtriangle(dpy, w, gc, colormap, v1, v2, v3, model, view, proj);
    //drawtriangle(dpy, w, gc, colormap, v1, v3, v4, model, view, proj);
@@ -386,7 +461,8 @@ int main(){
       //XClearArea(dpy, w, 400, 400, 600, 600, 0);
       //XFillRectangle(dpy, w, background, 0, 0, width, height);
       clearscreen(framebuffer);
-      drawtriangle(v1, v2, v3, model, view, proj, framebuffer);
+      //drawtriangle(v1, v2, v3, model, view, proj, framebuffer);
+      drawtrianglearray(vertices, sizeof(vertices)/sizeof(float), model, view, proj, framebuffer);
       //ximage = XCreateImage(dpy, vinfo.visual, 24, ZPixmap, 0, (char*)framebuffer, width, height, 8, width * 4);
       //XPutImage(dpy, w, gc, ximage, 0, 0, 0, 0, width, height);
       //drawtriangle(v1, v3, v4, model, view, proj, framebuffer);
@@ -396,6 +472,7 @@ int main(){
       XPutImage(dpy, w, gc, ximage, 0, 0, 0, 0, width, height);
       angle += 1.0f;
       mat4_rotate(angle, 1, model);
+      //glm_rotate(model, glm_rad(1.0f), (vec3){0, 1, 0});
    }
    XCloseDisplay(dpy);
    free(framebuffer);
