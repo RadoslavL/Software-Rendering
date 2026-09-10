@@ -44,6 +44,11 @@ void vertexshader(float position[3], float model[16], float view[16], float proj
    out[1] = (1.0f - int6[1]) * height;
    printf("%f, %f\n", out[0], out[1]);
    //glm_vec2_ucopy(int3, out);
+   /*
+   out[0] = ((position[0] / position[2]) * 0.5f + 0.5f) * width;
+   out[1] = (1.0f - ((position[1] / position[2]) * 0.5f + 0.5f)) * height;
+   printf("%f, %f\n", out[0], out[1]);
+   */
 }
 
 void fragmentshader(float color[3], float out[4]){
