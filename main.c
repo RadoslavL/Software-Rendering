@@ -7,6 +7,7 @@
 #include<assert.h>
 #include<cglm/cglm.h>
 #include"glm.h"
+#include <time.h>
 
 const unsigned int width = 1054;
 const unsigned int height = 1057;
@@ -80,14 +81,14 @@ void fillbottomtriangle(float v1[2], float v2[2], float v3[2], int *framebuffer)
       top[1] = v1[1];
       if(v2[0] < v3[0]){
          left[0] = v2[0];
-	 left[1] = v2[1];
-	 right[0] = v3[0];
-	 right[1] = v3[1];
+			left[1] = v2[1];
+			right[0] = v3[0];
+			right[1] = v3[1];
       }else{
          left[0] = v3[0];
-	 left[1] = v3[1];
-	 right[0] = v2[0];
-	 right[1] = v2[1];
+			left[1] = v3[1];
+			right[0] = v2[0];
+			right[1] = v2[1];
       }
    }
    if(v2[1] < v3[1] && v2[1] < v1[1]){
@@ -96,12 +97,12 @@ void fillbottomtriangle(float v1[2], float v2[2], float v3[2], int *framebuffer)
       if(v1[0] < v3[0]){
          left[0] = v1[0];
          left[1] = v1[1];
-	 right[0] = v3[0];
+			right[0] = v3[0];
          right[1] = v3[1];
       }else{
          left[0] = v3[0];
          left[1] = v3[1];
-	 right[0] = v1[0];
+			right[0] = v1[0];
          right[1] = v1[1];
       }
    }
@@ -111,12 +112,12 @@ void fillbottomtriangle(float v1[2], float v2[2], float v3[2], int *framebuffer)
       if(v1[0] < v2[0]){
          left[0] = v1[0];
          left[1] = v1[1];
-	 right[0] = v2[0];
+			right[0] = v2[0];
          right[1] = v2[1];
       }else{
          left[0] = v2[0];
          left[1] = v2[1];
-	 right[0] = v1[0];
+			right[0] = v1[0];
          right[1] = v1[1];
       }
    }
@@ -176,12 +177,12 @@ void filltoptriangle(float v1[2], float v2[2], float v3[2], int *framebuffer){
       if(v1[0] < v3[0]){
          left[0] = v1[0];
          left[1] = v1[1];
-	 right[0] = v3[0];
+			right[0] = v3[0];
          right[1] = v3[1];
       }else{
          left[0] = v3[0];
          left[1] = v3[1];
-	 right[0] = v1[0];
+			right[0] = v1[0];
          right[1] = v1[1];
       }
    }
@@ -191,12 +192,12 @@ void filltoptriangle(float v1[2], float v2[2], float v3[2], int *framebuffer){
       if(v1[0] < v2[0]){
          left[0] = v1[0];
          left[1] = v1[1];
-	 right[0] = v2[0];
+			right[0] = v2[0];
          right[1] = v2[1];
       }else{
          left[0] = v2[0];
          left[1] = v2[1];
-	 right[0] = v1[0];
+			right[0] = v1[0];
          right[1] = v1[1];
       }
    }
@@ -375,6 +376,16 @@ void drawtrianglearray(float *positions, int size, float model[16], float view[1
    }
 }
 
+// 1. Target frame step time in seconds (1/60s = ~0.016666s)
+const double TARGET_FRAME_TIME = 1.0 / 60.0;
+
+// Helper function to get current time in seconds as a double
+double get_time_seconds() {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (double)ts.tv_sec + (double)ts.tv_nsec / 1000000000.0;
+}
+
 int main(){
    Display *dpy = XOpenDisplay(NULL);
    assert(dpy);
@@ -384,6 +395,10 @@ int main(){
    XSelectInput(dpy, w, StructureNotifyMask);
    XMapWindow(dpy, w);
    XStoreName(dpy, w, "Software rendering");
+
+	Atom wmDeleteMessage = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
+   XSetWMProtocols(dpy, w, &wmDeleteMessage, 1);
+
    //XSelectInput(dpy, w, ExposureMask);
    GC gc = XCreateGC(dpy, w, 0, NULL);
    GC background = XCreateGC(dpy, w, 0, NULL);
@@ -477,7 +492,59 @@ int main(){
    //filltoptriangle(dpy, w, gc, mid, mid2, min);
    //XDrawLine(dpy, w, gc, 10, 60, 180, 20);
    XFlush(dpy);
-   while(1){
+
+	int running = 1;
+
+	// Inside your main function right before while(running)
+	double last_time = get_time_seconds();
+	double accumulator = 0.0;
+
+	float rotation_y[16];
+	float rotation_x[16];
+
+   while(running){
+		double current_time = get_time_seconds();
+		double delta_time = current_time - last_time;
+		last_time = current_time;
+
+		// Add the elapsed time to our bucket
+		accumulator += delta_time;
+
+		while (XPending(dpy)) {
+         XEvent ev;
+         XNextEvent(dpy, &ev);
+
+         // Check if the event is a ClientMessage sent by the close button
+         if (ev.type == ClientMessage && ev.xclient.data.l[0] == wmDeleteMessage) {
+            running = 0; // Set flag to exit the loop instantly
+            break;
+         }
+      }
+
+		if (!running) {
+			break;
+      }
+
+		if (accumulator >= TARGET_FRAME_TIME) {
+
+			clearscreen(framebuffer);
+			drawtrianglearray(vertices, sizeof(vertices)/sizeof(float), model, view, proj, framebuffer);
+
+			ximage = XCreateImage(dpy, DefaultVisual(dpy, DefaultScreen(dpy)), DefaultDepth(dpy, DefaultScreen(dpy)), ZPixmap, 0, (char*)framebuffer, width, height, 8, 0);
+			XPutImage(dpy, w, gc, ximage, 0, 0, 0, 0, width, height);
+			XFree(ximage);
+
+			// Advance animation smoothly using the target step
+			angle += 1.0f;
+			mat4_rotate(angle, 1, rotation_y);
+			mat4_rotate(angle / 2, 0, rotation_x);
+			mat4_mul_rotate(rotation_y, rotation_x, model);
+
+			// Deduct one frame's worth of time from the bucket
+			accumulator -= TARGET_FRAME_TIME;
+		}
+		/*
+
       //printf("Loop!\n");
       //XClearArea(dpy, w, 400, 400, 600, 600, 0);
       //XFillRectangle(dpy, w, background, 0, 0, width, height);
@@ -495,6 +562,8 @@ int main(){
       angle += 1.0f;
       mat4_rotate(angle, 1, model);
       //glm_rotate(model, glm_rad(1.0f), (vec3){0, 1, 0});
+		
+		*/
    }
    XCloseDisplay(dpy);
    free(framebuffer);
