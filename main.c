@@ -122,6 +122,12 @@ void fillbottomtriangle(float v1[2], float v2[2], float v3[2], int *framebuffer)
    }
    //printf("top: %f, %f; left: %f, %f; right: %f, %f\n", top[0], top[1], left[0], left[1], right[0], right[1]);
    //fflush(stdout);
+	
+	int startY = (int)(top[1] + 0.5f);
+   int endY   = (int)(left[1] + 0.5f);
+
+	if (startY >= endY) return;
+
    currentxleft = top[0];
    currentxright = top[0];
    slopeleft  = (left[0]  - top[0]) / (left[1]  - top[1]);
@@ -129,8 +135,8 @@ void fillbottomtriangle(float v1[2], float v2[2], float v3[2], int *framebuffer)
    float incolor[3] = {1.0f, 1.0f, 1.0f};
    float outcolor[4];
    int i, j;
-   for(i = top[1]; i <= left[1]; i++){
-      for(j = currentxleft; j < currentxright; j++){
+   for(i = startY; i < endY; i++){
+      for(j = (int)(currentxleft); j < (int)(currentxright); j++){
          fragmentshader(incolor, outcolor);
 	 framebuffer[i * width + j] = (255 << 24 | ((int)outcolor[0] * 255 & 0xFF) << 16 | ((int)outcolor[1] * 255 & 0xFF) << 8 | (int)outcolor[2] * 255 & 0xFF);
       }
@@ -196,20 +202,30 @@ void filltoptriangle(float v1[2], float v2[2], float v3[2], int *framebuffer){
    }
    //printf("bottom: %f, %f; left: %f, %f; right: %f, %f\n", bottom[0], bottom[1], left[0], left[1], right[0], right[1]);
    //fflush(stdout);
-   currentxleft = bottom[0];
-   currentxright = bottom[0];
-   slopeleft  = (bottom[0] - left[0])  / (bottom[1] - left[1]);
+	
+	int startY = (int)(bottom[1] + 0.5f);
+   int endY   = (int)(left[1] + 0.5f);
+
+   if (startY <= endY) return;
+
+   //currentxleft = bottom[0];
+   //currentxright = bottom[0];
+	slopeleft  = (bottom[0] - left[0])  / (bottom[1] - left[1]);
    sloperight = (bottom[0] - right[0]) / (bottom[1] - right[1]);
+	currentxleft  = left[0];
+   currentxright = right[0];
    float incolor[3] = {1.0f, 1.0f, 1.0f};
    float outcolor[4];
    int i, j;
-   for(i = bottom[1]; i > left[1]; i--){
-      for(j = currentxleft; j < currentxright; j++){
+   for(i = endY; i <= startY; i++){
+      for(j = (int)currentxleft; j < (int)currentxright; j++){
          fragmentshader(incolor, outcolor);
 	 framebuffer[i * width + j] = (255 << 24 | ((int)outcolor[0] * 255 & 0xFF) << 16 | ((int)outcolor[1] * 255 & 0xFF) << 8 | (int)outcolor[2] * 255 & 0xFF);
       }
-      currentxleft -= slopeleft;
-      currentxright -= sloperight;
+      //currentxleft -= slopeleft;
+      //currentxright -= sloperight;
+		currentxleft += slopeleft;
+		currentxright += sloperight;
    }
 }
 
@@ -308,7 +324,7 @@ void drawtriangle(float pos1[3], float pos2[3], float pos3[3], float model[16], 
       min[0] = v1[0];
       min[1] = v1[1];
       flattop = 1;
-   }else if(v2[1] > v1[1] & v1[1] == v3[1]){
+   }else if(v2[1] > v1[1] && v1[1] == v3[1]){
       max[0] = v1[0];
       max[1] = v1[1];
       mid[0] = v3[0];
@@ -475,6 +491,7 @@ int main(){
       //image = XCreateBitmapFromData(dpy, w, (char*)framebuffer, width, height);
       //XCopyArea(dpy, image, w, gc, 0, 0, width, height, 0, 0);
       XPutImage(dpy, w, gc, ximage, 0, 0, 0, 0, width, height);
+		XFree(ximage); //To fix memory leak
       angle += 1.0f;
       mat4_rotate(angle, 1, model);
       //glm_rotate(model, glm_rad(1.0f), (vec3){0, 1, 0});
